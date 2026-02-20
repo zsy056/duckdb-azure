@@ -78,6 +78,7 @@ static T ToClientOptions(const Azure::Core::Http::Policies::TransportOptions &tr
 	static_assert(std::is_base_of<Azure::Core::_internal::ClientOptions, T>::value,
 	              "type parameter must be an Azure ClientOptions");
 	T options;
+	options.Telemetry.ApplicationId = "duckdb-azure";
 	options.Transport = transport_options;
 	if (http_state != nullptr) {
 		// Because we mainly want to have stats on what has been needed and not on
