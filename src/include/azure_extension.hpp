@@ -3,7 +3,6 @@
 #include "duckdb.hpp"
 
 namespace duckdb {
-
 class AzureExtension : public Extension {
 public:
 	void Load(ExtensionLoader &loader) override;

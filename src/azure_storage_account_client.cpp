@@ -1,5 +1,4 @@
 #include "azure_storage_account_client.hpp"
-#include "azure_extension.hpp"
 
 #include "duckdb/catalog/catalog_transaction.hpp"
 #include "duckdb/common/exception.hpp"
@@ -7,6 +6,7 @@
 #include "duckdb/common/shared_ptr.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/main/client_context.hpp"
+#include "duckdb/main/database.hpp"
 #include "duckdb/main/secret/secret.hpp"
 #include "duckdb/main/secret/secret_manager.hpp"
 #include "http_state_policy.hpp"
