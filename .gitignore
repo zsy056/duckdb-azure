@@ -1,6 +1,5 @@
 build
 .idea
-_codeql_detected_source_root
 .vscode
 cmake-build-debug
 duckdb_unittest_tempdir/
