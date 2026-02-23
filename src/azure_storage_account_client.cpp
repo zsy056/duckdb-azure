@@ -6,6 +6,7 @@
 #include "duckdb/common/shared_ptr.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/main/client_context.hpp"
+#include "duckdb/main/database.hpp"
 #include "duckdb/main/secret/secret.hpp"
 #include "duckdb/main/secret/secret_manager.hpp"
 #include "http_state_policy.hpp"
@@ -78,6 +79,7 @@ static T ToClientOptions(const Azure::Core::Http::Policies::TransportOptions &tr
 	static_assert(std::is_base_of<Azure::Core::_internal::ClientOptions, T>::value,
 	              "type parameter must be an Azure ClientOptions");
 	T options;
+	options.Telemetry.ApplicationId = std::string("duckdb-azure/") + DuckDB::LibraryVersion();
 	options.Transport = transport_options;
 	if (http_state != nullptr) {
 		// Because we mainly want to have stats on what has been needed and not on
