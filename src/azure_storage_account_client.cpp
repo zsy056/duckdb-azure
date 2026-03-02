@@ -5,10 +5,12 @@
 #include "duckdb/common/file_opener.hpp"
 #include "duckdb/common/shared_ptr.hpp"
 #include "duckdb/common/string_util.hpp"
+#include "duckdb/logging/logger.hpp"
 #include "duckdb/main/client_context.hpp"
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/secret/secret.hpp"
 #include "duckdb/main/secret/secret_manager.hpp"
+#include "http_logging_policy.hpp"
 #include "http_state_policy.hpp"
 
 #include <azure/core/credentials/token_credential_options.hpp>
@@ -81,11 +83,7 @@ static T ToClientOptions(const Azure::Core::Http::Policies::TransportOptions &tr
 	T options;
 	auto db = FileOpener::TryGetDatabase(opener);
 	if (db) {
-		auto user_agent = StringUtil::Format("%s %s", db->config.UserAgent(), DuckDB::SourceID());
-		options.Telemetry.ApplicationId = user_agent;
-		if (http_state != nullptr) {
-			http_state->user_agent = user_agent;
-		}
+		options.Telemetry.ApplicationId = StringUtil::Format("%s %s", db->config.UserAgent(), DuckDB::SourceID());
 	}
 	options.Transport = transport_options;
 	if (http_state != nullptr) {
@@ -94,6 +92,11 @@ static T ToClientOptions(const Azure::Core::Http::Policies::TransportOptions &tr
 		// part and not the `PerRetryPolicies`. Network issues will result in retry that can
 		// increase the input/output but will not be displayed in the EXPLAIN summary.
 		options.PerOperationPolicies.emplace_back(new HttpStatePolicy(std::move(http_state)));
+	}
+	// Add HTTP logging policy (per-retry, so user-agent is already set by the telemetry policy)
+	auto client_context = FileOpener::TryGetClientContext(opener);
+	if (client_context && client_context->logger) {
+		options.PerRetryPolicies.emplace_back(new HttpLoggingPolicy(client_context->logger));
 	}
 	return options;
 }
