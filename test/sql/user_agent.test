@@ -1,0 +1,19 @@
+# name: test/sql/user_agent.test
+# description: Confirm that the User-Agent header is set with the standard duckdb prefix
+# group: [sql]
+
+require azure
+
+require-env AZURE_STORAGE_CONNECTION_STRING
+
+statement ok
+SET azure_storage_connection_string = '${AZURE_STORAGE_CONNECTION_STRING}';
+
+statement ok
+SET azure_http_stats = true;
+
+# The EXPLAIN ANALYZE output should include the User-Agent header starting with "duckdb"
+query II
+EXPLAIN ANALYZE SELECT sum(l_orderkey) FROM 'az://testing-private/l.csv';
+----
+analyzed_plan	<REGEX>:.*User-Agent: duckdb.*

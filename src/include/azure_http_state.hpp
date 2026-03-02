@@ -4,6 +4,7 @@
 #include "duckdb/common/file_opener.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/main/client_context_state.hpp"
+#include <string>
 
 namespace duckdb {
 
@@ -30,6 +31,7 @@ public:
 	atomic<idx_t> post_count {0};
 	atomic<idx_t> total_bytes_received {0};
 	atomic<idx_t> total_bytes_sent {0};
+	std::string user_agent;
 
 	//! Called by the ClientContext when the current query ends
 	void QueryEnd(ClientContext &context) override {

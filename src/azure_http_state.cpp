@@ -11,6 +11,7 @@ void AzureHTTPState::Reset() {
 	post_count = 0;
 	total_bytes_received = 0;
 	total_bytes_sent = 0;
+	user_agent = "";
 }
 
 shared_ptr<AzureHTTPState> AzureHTTPState::TryGetState(ClientContext &context) {
@@ -44,6 +45,9 @@ void AzureHTTPState::WriteProfilingInformation(std::ostream &ss) {
 	ss << "││" + QueryProfiler::DrawPadded(get, TOTAL_BOX_WIDTH - 4) + "││\n";
 	ss << "││" + QueryProfiler::DrawPadded(put, TOTAL_BOX_WIDTH - 4) + "││\n";
 	ss << "││" + QueryProfiler::DrawPadded(post, TOTAL_BOX_WIDTH - 4) + "││\n";
+	if (!user_agent.empty()) {
+		ss << "││" + QueryProfiler::DrawPadded("User-Agent: " + user_agent, TOTAL_BOX_WIDTH - 4) + "││\n";
+	}
 	ss << "│└───────────────────────────────────┘│\n";
 	ss << "└─────────────────────────────────────┘\n";
 }
