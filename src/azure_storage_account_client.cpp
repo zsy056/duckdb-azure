@@ -94,9 +94,16 @@ static T ToClientOptions(const Azure::Core::Http::Policies::TransportOptions &tr
 		options.PerOperationPolicies.emplace_back(new HttpStatePolicy(std::move(http_state)));
 	}
 	// Add HTTP logging policy (per-retry, so user-agent is already set by the telemetry policy)
-	auto client_context = FileOpener::TryGetClientContext(opener);
-	if (client_context && client_context->logger) {
-		options.PerRetryPolicies.emplace_back(new HttpLoggingPolicy(client_context->logger));
+	Value enable_http_logging_value;
+	bool enable_http_logging = false;
+	if (FileOpener::TryGetCurrentSetting(opener, "azure_http_logging", enable_http_logging_value)) {
+		enable_http_logging = enable_http_logging_value.GetValue<bool>();
+	}
+	if (enable_http_logging) {
+		auto client_context = FileOpener::TryGetClientContext(opener);
+		if (client_context && client_context->logger) {
+			options.PerRetryPolicies.emplace_back(new HttpLoggingPolicy(client_context->logger));
+		}
 	}
 	return options;
 }
