@@ -24,3 +24,17 @@ FROM duckdb_logs_parsed('HTTP')
 WHERE starts_with(request.headers['user-agent'], 'duckdb');
 ----
 true
+
+statement ok
+CALL truncate_duckdb_logs();
+
+statement ok
+SET azure_http_logging = false;
+
+statement ok
+SELECT sum(l_orderkey) FROM 'az://testing-private/l.csv';
+
+query I
+SELECT count(*) FROM duckdb_logs_parsed('HTTP');
+----
+0
