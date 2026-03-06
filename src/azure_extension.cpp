@@ -34,6 +34,9 @@ static void LoadInternal(ExtensionLoader &loader) {
 	config.AddExtensionOption("azure_http_stats",
 	                          "Include http info from the Azure Storage in the explain analyze statement.",
 	                          LogicalType::BOOLEAN, false);
+	config.AddExtensionOption("azure_http_logging",
+	                          "Log HTTP requests made by the Azure extension to the DuckDB log.",
+	                          LogicalType::BOOLEAN, false);
 	config.AddExtensionOption("azure_context_caching",
 	                          "Enable/disable the caching of some context when performing queries. "
 	                          "This cache is by default enable, and will for a given connection keep a local context "
