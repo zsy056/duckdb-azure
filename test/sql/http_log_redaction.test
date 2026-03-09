@@ -25,7 +25,8 @@ FROM duckdb_logs_parsed('HTTP');
 ----
 true
 
-# Verify that 'sig' query parameter is redacted: no raw sig value appears in the URL
+# Verify that 'sig' query parameter is redacted by default:
+# If 'sig' appears in the URL it must be redacted; some auth types don't use 'sig' at all, which is also fine.
 query I
 SELECT count(*) = 0
 FROM duckdb_logs_parsed('HTTP')
