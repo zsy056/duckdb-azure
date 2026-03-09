@@ -66,6 +66,34 @@ true
 statement ok
 CALL truncate_duckdb_logs();
 
+# Test multiple headers in config (semicolon-separated): redact both 'x-ms-date' and 'x-ms-version'
+statement ok
+SET azure_http_logging_redact_headers = 'x-ms-date;x-ms-version';
+
+statement ok
+SELECT sum(l_orderkey) FROM 'az://testing-private/l.csv';
+
+# x-ms-date must be redacted if present
+query I
+SELECT count(*) = 0
+FROM duckdb_logs_parsed('HTTP')
+WHERE request.headers['x-ms-date'] IS NOT NULL
+  AND request.headers['x-ms-date'] != 'REDACTED';
+----
+true
+
+# x-ms-version must be redacted if present
+query I
+SELECT count(*) = 0
+FROM duckdb_logs_parsed('HTTP')
+WHERE request.headers['x-ms-version'] IS NOT NULL
+  AND request.headers['x-ms-version'] != 'REDACTED';
+----
+true
+
+statement ok
+CALL truncate_duckdb_logs();
+
 # Test that redaction can be disabled by setting empty list
 statement ok
 SET azure_http_logging_redact_query_params = '';
