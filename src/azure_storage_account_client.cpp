@@ -12,6 +12,7 @@
 #include "duckdb/main/secret/secret_manager.hpp"
 #include "http_logging_policy.hpp"
 #include "http_state_policy.hpp"
+#include <unordered_set>
 
 #include <azure/core/credentials/token_credential_options.hpp>
 #include <azure/core/http/curl_transport.hpp>
@@ -102,7 +103,37 @@ static T ToClientOptions(const Azure::Core::Http::Policies::TransportOptions &tr
 	if (enable_http_logging) {
 		auto client_context = FileOpener::TryGetClientContext(opener);
 		if (client_context && client_context->logger) {
-			options.PerRetryPolicies.emplace_back(new HttpLoggingPolicy(client_context->logger));
+			// Read redaction config options
+			std::unordered_set<std::string> redact_query_params;
+			std::unordered_set<std::string> redact_headers;
+
+			Value redact_query_params_value;
+			if (FileOpener::TryGetCurrentSetting(opener, "azure_http_logging_redact_query_params",
+			                                     redact_query_params_value) &&
+			    !redact_query_params_value.IsNull()) {
+				for (auto &param : StringUtil::Split(redact_query_params_value.GetValue<std::string>(), ';')) {
+					auto trimmed = StringUtil::Trim(param);
+					if (!trimmed.empty()) {
+						redact_query_params.insert(trimmed);
+					}
+				}
+			}
+
+			Value redact_headers_value;
+			if (FileOpener::TryGetCurrentSetting(opener, "azure_http_logging_redact_headers",
+			                                     redact_headers_value) &&
+			    !redact_headers_value.IsNull()) {
+				for (auto &hdr : StringUtil::Split(redact_headers_value.GetValue<std::string>(), ';')) {
+					auto trimmed = StringUtil::Lower(StringUtil::Trim(hdr));
+					if (!trimmed.empty()) {
+						redact_headers.insert(trimmed);
+					}
+				}
+			}
+
+			options.PerRetryPolicies.emplace_back(
+			    new HttpLoggingPolicy(client_context->logger, std::move(redact_query_params),
+			                         std::move(redact_headers)));
 		}
 	}
 	return options;

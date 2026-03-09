@@ -1,0 +1,93 @@
+# name: test/sql/http_log_redaction.test
+# description: Test that sensitive query parameters and headers are redacted in HTTP logs by default
+# group: [sql]
+
+require azure
+
+require-env AZURE_STORAGE_CONNECTION_STRING
+
+statement ok
+SET azure_storage_connection_string = '${AZURE_STORAGE_CONNECTION_STRING}';
+
+statement ok
+CALL enable_logging('HTTP');
+
+statement ok
+SET azure_http_logging = true;
+
+statement ok
+SELECT sum(l_orderkey) FROM 'az://testing-private/l.csv';
+
+# Verify that at least one HTTP log entry was recorded
+query I
+SELECT count(*) > 0
+FROM duckdb_logs_parsed('HTTP');
+----
+true
+
+# Verify that 'sig' query parameter is redacted: no raw sig value appears in the URL
+query I
+SELECT count(*) = 0
+FROM duckdb_logs_parsed('HTTP')
+WHERE contains(request.url, 'sig=') AND NOT contains(request.url, 'sig=REDACTED');
+----
+true
+
+# Verify that 'Authorization' header is redacted by default: no raw Authorization value in logs
+query I
+SELECT count(*) = 0
+FROM duckdb_logs_parsed('HTTP')
+WHERE request.headers['authorization'] IS NOT NULL
+  AND request.headers['authorization'] != 'REDACTED'
+  AND starts_with(request.headers['authorization'], 'Bearer ');
+----
+true
+
+statement ok
+CALL truncate_duckdb_logs();
+
+# Test custom redaction: redact 'x-ms-date' header
+statement ok
+SET azure_http_logging_redact_headers = 'x-ms-date';
+
+statement ok
+SELECT sum(l_orderkey) FROM 'az://testing-private/l.csv';
+
+# x-ms-date header should be redacted
+query I
+SELECT count(*) = 0
+FROM duckdb_logs_parsed('HTTP')
+WHERE request.headers['x-ms-date'] IS NOT NULL
+  AND request.headers['x-ms-date'] != 'REDACTED';
+----
+true
+
+statement ok
+CALL truncate_duckdb_logs();
+
+# Test that redaction can be disabled by setting empty list
+statement ok
+SET azure_http_logging_redact_query_params = '';
+
+statement ok
+SET azure_http_logging_redact_headers = '';
+
+statement ok
+SELECT sum(l_orderkey) FROM 'az://testing-private/l.csv';
+
+# With no redaction, logs should still contain entries
+query I
+SELECT count(*) > 0
+FROM duckdb_logs_parsed('HTTP');
+----
+true
+
+statement ok
+CALL truncate_duckdb_logs();
+
+# Reset to defaults
+statement ok
+SET azure_http_logging_redact_query_params = 'sig';
+
+statement ok
+SET azure_http_logging_redact_headers = 'Authorization';
